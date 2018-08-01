@@ -1,6 +1,6 @@
 const express = require('express');
 const apiRouter = express.Router();
-const serv = require('../../server/servHelpers');
+const serv = require('../../libs/serv-helpers');
 
 module.exports = function (db) {
 
@@ -60,6 +60,24 @@ module.exports = function (db) {
     return serv.getAllMenuItemOrders(db);
   })
 
+  // NOTE: should be extracted into separate route
+  apiRouter.post('/orders/:order_id', (req, res) => {
+    db.menu_items_orders.insert({
+      menu_item_id: req.body.id,
+      order_id: req.params.order_id
+    })
+      // .then((menuItemOrder) => {
+      //res.json(menuItemOrder);
+      //})
+      .then((newReference) => {
+        return db.menu_items.findOne(newReference.menu_item_id);
+      })
+      .then((menu_item) => {
+        // returns the new menu item
+        res.status(200).json(menu_item);
+      });
+  });
+
   apiRouter.get('/menu_items', (req, res) => {
     db.menu_items.find()
       .then((menu_items) => {
@@ -79,9 +97,9 @@ module.exports = function (db) {
   ///////////route for sms functionality/////////
   apiRouter.get('/customers/:cust_id', (req, res) => {
     db.customers.find(req.params.cust_id)
-    .then((cust) => {
-      res.status(200).json(cust);
-    })
+      .then((cust) => {
+        res.status(200).json(cust);
+      })
   })
 
   // console.log('test');

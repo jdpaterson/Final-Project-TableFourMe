@@ -1,90 +1,109 @@
 import React, { Component } from 'react';
 import NumberFormat from 'react-number-format';
-//import { getAllReservations } from '../../../libs/reservation-func.js';
+import { namifyStr, getOnlyNumbers } from '../../libs/form-helper-func.js';
 
 export default class BookingForm extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      name: '',
-      phone: '',
-      group_size: '',
-      email: '',
-      res_code: '',
+      formData: {
+        name: '',
+        phone: '',
+        group_size: '',
+        email: '',
+        res_code: ''
+      },
+      socket: '',
       btnType: ''
     };
   }
 
-  clicked = btnType => {
+  // store the form button type in state (submit, update, cancel)
+  btnClicked = btnType => {
     this.setState({ btnType });
   }
 
-  // make a POST request with form data
+  // submit the form data
   handleFormSubmission = event => {
     // prevent default GET request
     event.preventDefault();
     // deconstruct event.target
-    const { name, phone, group_size, email } = event.target;
+    let { name, phone, group_size, email } = event.target;
+    // deconstruct state object
+    const { btnType, formData: { res_code } } = this.state;
     // send form data to websocket
-    this.props.socket.emit(`${this.state.btnType}Reservation`, {
-      name: name.value.trim(),
-      phone: phone.value.replace(/\D/g, ''),
+    this.state.socket.emit(`${btnType}Reservation`, {
+      name: namifyStr(name.value),
+      phone: getOnlyNumbers(phone.value),
       group_size: group_size.value,
       email: email.value,
-      res_code: this.props.res_code,
+      res_code,
       host: process.env.HOST || window.location.host
     });
   }
 
+  // add submit button for a new reservation or
+  // add update and cancel buttons for an existing reservation
+  addBtns = () => {
+    let defaultBtnConfig = {};
+    let cancelBtn = '';
+
+    if (this.state.formData.res_code) {
+      // CASE 1: res_code exists. show update and cancel buttons
+      defaultBtnConfig = {
+        type: 'update',
+        klassName: 'button is-success'
+      };
+      cancelBtn = (
+        <button
+          type='submit'
+          onClick={() => this.btnClicked('cancel')}
+          className="button is-danger"
+        >CANCEL</button>
+      );
+    } else {
+      // CASE 2: res_code doesn't exist. show new buttons
+      defaultBtnConfig = {
+        type: 'submit',
+        klassName: 'button is-link'
+      };
+    }
+
+    let defaultBtn = (
+      <button
+        type='submit'
+        onClick={() => this.btnClicked(defaultBtnConfig.type)}
+        className={defaultBtnConfig.klassName}
+      >{defaultBtnConfig.type.toUpperCase()}</button>
+    );
+    return { defaultBtn, cancelBtn };
+  }
+
+  // handle changes in input boxes
   handleChange = ({ target: { name, value } }) => {
-    this.setState({ [name]: value });
+    this.setState(oldState => {
+      const { formData } = oldState;
+      formData[name] = value;
+      return { ...oldState, formData };
+    })
   }
 
-  componentWillReceiveProps = () => {
-    // receive res_code as props from MainArea.jsx and save it in state
-    const { res_code } = this.props;
-    this.props.reservations;
+  componentDidMount = () => {
+    // add formData to state
+    const { socket, formData } = this.props;
+    this.setState({ socket, formData });
   }
 
-  addBtns = () => {
-    let defaultBtn = '';
-    let cancelBtn = '';
-
-    if (this.state.res_code) {
-      defaultBtn = (
-        <button type='submit' onClick={() => this.clicked('update')} className="button is-success" >UPDATE</button>
-      );
-      cancelBtn = (
-        <button type='submit' onClick={() => this.clicked('cancel')} className="button is-danger">CANCEL</button>
-      );
-    } else {
-      defaultBtn = (
-        <button type='submit' onClick={() => this.clicked('submit')} className="button is-link">SUBMIT</button>
-      );
+  // if updated props !== current state, then replace it with new props
+  componentDidUpdate(prevProps, prevState) {
+    const { formData } = this.props;
+    if (prevState.formData !== formData) {
+      this.setState({ formData });
     }
-    return { defaultBtn, cancelBtn };
-  }
-
-  addBtns = () => {
-    let defaultBtn = '';
-    let cancelBtn = '';
-
-    if (this.state.res_code) {
-      defaultBtn = (
-        <button type='submit' onClick={() => this.clicked('update')} className="button is-success" >UPDATE</button>
-      );
-      cancelBtn = (
-        <button type='submit' onClick={() => this.clicked('cancel')} className="button is-danger">CANCEL</button>
-      );
-    } else {
-      defaultBtn = (
-        <button type='submit' onClick={() => this.clicked('submit')} className="button is-link">SUBMIT</button>
-      );
-    }
-    return { defaultBtn, cancelBtn };
   }
 
   render() {
+    const { name, phone, group_size, email } = this.state.formData;
     return (
       <form onSubmit={this.handleFormSubmission}>
         <div className='field'>
@@ -92,7 +111,7 @@ export default class BookingForm extends Component {
           <div className='control has-icons-left has-icons-right'>
             <input
               className='input is-medium'
-              value={this.state.name}
+              value={name}
               onChange={this.handleChange}
               name='name'
               type='text'
@@ -114,7 +133,7 @@ export default class BookingForm extends Component {
             <NumberFormat
               className='input is-medium'
               format='(###) ###-####'
-              value={this.state.phone}
+              value={phone}
               onChange={this.handleChange}
               name='phone'
               type='tel'
@@ -137,7 +156,7 @@ export default class BookingForm extends Component {
           <div className='control has-icons-left has-icons-right'>
             <input
               className='input is-medium'
-              value={this.state.group_size}
+              value={group_size}
               onChange={this.handleChange}
               name='group_size'
               type='number'
@@ -160,7 +179,7 @@ export default class BookingForm extends Component {
           <div className='control has-icons-left has-icons-right'>
             <input
               className='input is-medium'
-              value={this.state.email}
+              value={email}
               onChange={this.handleChange}
               name='email'
               type='email'

@@ -18,7 +18,7 @@ export default class Order extends Component {
           <td><span className="listItemName">{item.name}</span></td>
           <td>{item.price}</td>
           <td className='remove-from-order'>
-            <a className='button is-danger is-outlined is-small' onClick={() => {this.props.removeFromOrder(index)}}>
+            <a className='button is-danger is-outlined is-small' onClick={() => {this.props.removeFromOrder(item)}}>
               <span>Remove</span>
               <span className='icon is-small'>
                 <i className='fas fa-times'></i>
