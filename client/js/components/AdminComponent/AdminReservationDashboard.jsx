@@ -24,9 +24,18 @@ export default class AdminReservationDashboard extends Component {
 
   makeTable = reservations => {
     let sizeSum = 0;
+    let index = 0;
 
     // loop through table rows
-    const cells = reservations.map((reservation, index) => {
+    const cells = reservations.map(reservation => {
+      // only display reservation with status being 'waiting'
+      if (reservation.status !== 'waiting') {
+        return true;
+      }
+
+      // set row position
+      const position = index + 1;
+
       // add the group size
       sizeSum += reservation.group_size;
       const { id, group_size, name, order_id, status } = reservation;
@@ -43,7 +52,7 @@ export default class AdminReservationDashboard extends Component {
 
       return (
         <tr key={id}>
-          <td>{index + 1}</td>
+          <td>{position}</td>
           <td>{group_size}</td>
           <td>{name}</td>
           <td>{orderStatus}</td>
