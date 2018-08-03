@@ -25,8 +25,29 @@ massive(connectionString)
     const apiRoutes = require('../routes/api/index')(db);
     app.use('/api', apiRoutes);
 
+    // create empty objects to store socket client id and url
+    // from which requests were made. save admin data in a separate object
+    const clients = {}, admin = {};
+
+    // HANDLE CONNECTION
     io.on('connection', socket => {
       console.log(`${countClients(io)} CLIENT(S) CONNECTED`);
+
+      // deconstruct socket object and save id and path (referer without origin)
+      const { id, request: { headers: { origin, referer } } } = socket;
+      const path = referer.replace(origin, '');
+      // if client is admin, save id and path to "admin"
+      if (path === '/admin') {
+        admin[id] = { id, path };
+      } else {
+        // otherwise save it to "clients"
+        clients[id] = { id, path };
+      }
+
+      // console.log('admin', admin);
+      // console.log(clients);
+
+      // HANDLE DISCONNECTION
       socket.on('disconnect', () => {
         console.log(`${countClients(io)} CLIENT(S) CONNECTED`);
       });
@@ -39,20 +60,54 @@ massive(connectionString)
 
       // SUBMIT NEW RESERVATION
       socket.on('submitReservation', formData => {
+        // console.log('path', socket.);
         serv.submitNewReservation(db, formData)
-          .then(data => { io.emit('loadNewReservation', data); });
+          .then(data => {
+            // if sender is admin, broadcast message to all clients including the sender
+            if (Object.keys(admin).includes(socket.id)) {
+              io.emit('loadNewReservation', data);
+            } else {
+              // otherwise, broadcast message to the original sender and admin(s)
+              socket.emit('loadNewReservation', data);
+              Object.keys(admin).forEach(adminId => {
+                socket.broadcast.to(adminId).emit('loadNewReservation', data);
+              })
+            }
+          });
       })
 
       // UPDATE EXISTING RESERVATION
       socket.on('updateReservation', formData => {
         serv.updateReservation(db, formData)
-          .then(data => { io.emit('loadChangedReservation', data); });
+          .then(data => {
+            // if sender is admin, broadcast message to all clients including the sender
+            if (Object.keys(admin).includes(socket.id)) {
+              io.emit('loadChangedReservation', data);
+            } else {
+              // otherwise, broadcast message to the original sender and admin(s)
+              socket.emit('loadChangedReservation', data);
+              Object.keys(admin).forEach(adminId => {
+                socket.broadcast.to(adminId).emit('loadChangedReservation', data);
+              })
+            }
+          });
       });
 
       // CANCEL RESERVATION
       socket.on('cancelReservation', formData => {
         serv.cancelReservation(db, formData)
-          .then(data => { io.emit('removeCancelledReservation', data); });
+          .then(data => {
+            // if sender is admin, broadcast message to all clients including the sender
+            if (Object.keys(admin).includes(socket.id)) {
+              io.emit('removeCancelledReservation', data);
+            } else {
+              // otherwise, broadcast message to the original sender and admin(s)
+              socket.emit('removeCancelledReservation', data);
+              Object.keys(admin).forEach(adminId => {
+                socket.broadcast.to(adminId).emit('removeCancelledReservation', data);
+              })
+            }
+          });
       })
 
       // UPDATE RESERVATION STATUS
@@ -76,9 +131,9 @@ massive(connectionString)
       })
       socket.on('addItemToOrder', status => {
         serv.addItemOrderWMenuItem(db, status)
-        .then(data => {
-          io.emit('newOrderAdded', data);
-        })
+          .then(data => {
+            io.emit('newOrderAdded', data);
+          })
       })
     })
   })
