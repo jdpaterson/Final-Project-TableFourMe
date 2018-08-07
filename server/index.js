@@ -20,19 +20,21 @@ app.use(express.static(path.join(__dirname + '/../build')));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
+// EXPRESS IS FOR API ROUTES ONLY. FOR ALL OTHER ROUTES SHOULD SEND index.html BACK TO CLIENT
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname + '/../build/index.html'));
+});
+
 
 massive(connectionString)
   .then(db => {
     console.log('Connection to PSQL established.');
-    // SOCKET SERVER FUNCTIONS
-    setSocketServer(io, db);
+
     const apiRoutes = require('../routes/api/index')(db);
     app.use('/api', apiRoutes);
-    // EXPRESS IS FOR API ROUTES ONLY. FOR ALL OTHER ROUTES SHOULD SEND index.html BACK TO CLIENT
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(__dirname + '/../build/index.html'));
-    });
 
+    // SOCKET SERVER FUNCTIONS
+    setSocketServer(io, db);
   })
   .catch(err => {
     console.log(err.stack);
