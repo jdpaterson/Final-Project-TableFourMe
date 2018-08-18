@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import swal from 'sweetalert';
 
 import ReservationDashboard from './UserComponent/ReservationDashboard.jsx';
 import AdminReservationDashboard from './AdminComponent/AdminReservationDashboard.jsx';
@@ -25,6 +26,13 @@ export default class MainComponent extends Component {
       tableLoading: true,
       err: blankError()
     };
+
+    swal("Welcome to TableFour!",
+    "TableFour is a restaurant waiting list app. After adding yourself to the waitlist, " +
+    "you will receive a text message where you can monitor your place in the queue realtime. " +
+    "While you are waiting, you can browse the menu, and even place an order, so that by the time " +
+    "it's your turn to sit down at the restaurant, you will have already ordered, and can eat sooner! " +
+    "Get started by adding yourself to the waitlist.");
   }
 
   setMenu = menu => {

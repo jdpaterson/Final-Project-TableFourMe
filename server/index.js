@@ -4,7 +4,7 @@ const path = require('path');
 const bodyParser = require('body-parser');
 const setSocketServer = require('../libs/serv-sock-setters.js');
 //PORT for Express Server, Sockets will use the same server and port
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3003;
 const ENV = process.env.NODE_ENV || 'development';
 
 const express = require('express');
